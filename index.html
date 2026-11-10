@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đồng nghĩa &amp; Trái nghĩa</title>
+<style>
+:root{--bg:#eaf3fc;--blue:#8fc1f0;--blue-deep:#3b6a9c;--blue-soft:#d6e8fa;--edge:#b5ead7;--ok:#9fe2b4;--bad:#ff9fa8;--ink:#2b4766;box-sizing:border-box}
+*{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{background:linear-gradient(180deg,#f4f9ff,var(--bg));color:var(--ink);font-family:"Trebuchet MS","Segoe UI",sans-serif;display:flex;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.card{width:100%;max-width:480px;border:3px solid var(--edge);border-radius:22px;padding:22px 18px;background:#fff;box-shadow:0 6px 20px rgba(120,170,220,.25);align-self:flex-start;margin-top:8px}
+h1{margin:0 0 4px;font-size:1.5rem;color:var(--blue-deep)}
+.meta{display:flex;justify-content:space-between;font-size:.9rem;color:#6b8db0;margin-bottom:10px}
+.bar{height:6px;border-radius:6px;background:var(--blue-soft);overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.type{display:inline-block;padding:3px 12px;border-radius:20px;border:2px solid var(--edge);font-size:.85rem;margin-bottom:10px}
+.q{font-size:1.25rem;margin:0 0 16px;line-height:1.35}
+.q b{color:var(--blue-deep);font-size:1.6rem}
+.opts{display:grid;gap:10px}
+.opt{font:inherit;font-size:1.1rem;color:var(--ink);background:var(--blue-soft);border:2px solid var(--blue);border-radius:14px;padding:14px;text-align:left;cursor:pointer}
+.opt:focus-visible{outline:3px solid var(--blue-deep)}
+.opt.ok{background:var(--ok);border-color:#5cc47e;font-weight:bold}
+.opt.bad{background:var(--bad);border-color:#ee6b78;animation:shake .4s}
+.opt:disabled{cursor:default}
+.msg{min-height:1.5em;margin:14px 0 8px;font-weight:bold}
+.msg.ok{color:#2e8b57}.msg.bad{color:#d0485a}
+.next{font:inherit;font-size:1.1rem;font-weight:bold;width:100%;padding:14px;border-radius:14px;border:3px solid var(--edge);background:var(--blue);color:#17385c;cursor:pointer;display:none}
+.next.show{display:block}
+.big{font-size:3rem;color:#2e8b57;margin:10px 0}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@media (prefers-reduced-motion:reduce){.opt.bad{animation:none}}
+</style>
+</head>
+<body>
+<main class="card" id="app"></main>
+<script>
+// [loại, từ, đáp án, (tuỳ chọn) đáp án sai]  s = đồng nghĩa, a = trái nghĩa
+var DATA=[
+// --- Từ trong ảnh ---
+["s","respect","admire"],["s","devote","dedicate"],["s","cutting-edge","highly advanced"],
+["s","passed away","died"],["s","increased","went up"],["s","banned","prohibited"],
+["s","in conclusion","to sum up"],["s","delicious","tasty"],["s","important","essential"],
+["s","reduce","decrease"],["s","preserve","protect"],["s","harmful","damaging"],
+["a","negative","positive"],["a","careful","careless"],["a","beneficial","harmful"],
+["a","contaminated","clean"],["a","strengthen","worsen"],["a","huge","tiny"],
+["a","reduce","increase"],["a","confusing","clear"],["a","gain","lose"],["a","alive","dead"],
+["a","considerate","thoughtless"],["a","detailed","brief"],["a","ancient","modern"],
+// --- Câu tự nghĩ thêm ---
+["s","begin","start",["finish","borrow","forget"]],
+["s","quick","fast",["slow","heavy","quiet"]],
+["s","happy","glad",["upset","sleepy","hungry"]],
+["a","difficult","easy",["hard","complex","tough"]],
+["a","rich","poor",["wealthy","famous","generous"]],
+["a","hot","cold",["warm","burning","boiling"]]
+];
+var POOL=["window","river","borrow","whisper","wooden","village","angry","quickly","travel","bright","mountain","empty","lucky","bridge","kitchen","gather"];
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function build(d){
+  var wrong=d[3]||shuffle(POOL.filter(function(w){return w!==d[1]&&w!==d[2]})).slice(0,3);
+  return{type:d[0],word:d[1],answer:d[2],opts:shuffle(wrong.concat(d[2]))};
+}
+var app=document.getElementById("app"),qs,i,score,tries;
+function start(){qs=shuffle(DATA).map(build);i=0;score=0;show()}
+function show(){
+  var q=qs[i];tries=0;
+  app.innerHTML='<h1>Đồng nghĩa &amp; Trái nghĩa</h1>'+
+  '<div class="meta"><span>Câu '+(i+1)+'/'+qs.length+'</span><span>Điểm: '+score+'</span></div>'+
+  '<div class="bar"><i style="width:'+(i/qs.length*100)+'%"></i></div>'+
+  '<span class="type">'+(q.type==="s"?"Đồng nghĩa (=)":"Trái nghĩa (≠)")+'</span>'+
+  '<p class="q">'+(q.type==="s"?"Từ đồng nghĩa với":"Từ trái nghĩa với")+' <b>'+q.word+'</b> là gì?</p>'+
+  '<div class="opts"></div><div class="msg" aria-live="polite"></div>'+
+  '<button class="next">Tiếp theo</button>';
+  var box=app.querySelector(".opts");
+  q.opts.forEach(function(o){
+    var b=document.createElement("button");b.className="opt";b.textContent=o;
+    b.onclick=function(){pick(b,o)};box.appendChild(b);
+  });
+  app.querySelector(".next").onclick=function(){i++;i<qs.length?show():end()};
+}
+function pick(b,o){
+  var q=qs[i],msg=app.querySelector(".msg");
+  if(o===q.answer){
+    if(tries===0)score++;
+    b.classList.add("ok");
+    app.querySelectorAll(".opt").forEach(function(x){x.disabled=true});
+    msg.className="msg ok";msg.textContent="Chính xác!";
+    var n=app.querySelector(".next");n.classList.add("show");
+    n.textContent=i===qs.length-1?"Xem kết quả":"Tiếp theo";
+  }else{
+    tries++;b.classList.add("bad");b.disabled=true;
+    msg.className="msg bad";msg.textContent="Sai rồi, chọn lại nhé!";
+    if(navigator.vibrate)navigator.vibrate([200,80,200]);
+  }
+}
+function end(){
+  app.innerHTML='<h1>Hoàn thành!</h1><div class="big">'+score+'/'+qs.length+'</div>'+
+  '<p>Số câu đúng ngay lần chọn đầu tiên.</p><button class="next show" id="again">Làm lại</button>';
+  document.getElementById("again").onclick=start;
+}
+start();
+</script>
+</body>
+</html>
